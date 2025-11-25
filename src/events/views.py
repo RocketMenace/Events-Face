@@ -1,11 +1,12 @@
 from urllib.request import Request
 
 from rest_framework import status
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from ..common.response_factory import api_response_factory
-from .api_docs import create_event_area_docs, create_event_docs
+from .api_docs import create_event_area_docs, create_event_docs, get_events_docs
 from .ioc_container import get_container
 from .serializers import EventAreaRequestSerializer, EventRequestSerializer
 from .use_cases import CreateAreaUseCase, CreateEventUseCase, GetEventsUseCase
@@ -47,12 +48,35 @@ class EventCreateAPI(APIView):
         )
 
 
+@get_events_docs
 class ListEventAPI(APIView):
+    pagination_class = LimitOffsetPagination
+
     def get(self, request: Request) -> Response:
         container = get_container()
         use_case: GetEventsUseCase = container.resolve(GetEventsUseCase)
-        response = use_case.execute()
+
+        name_filter = request.query_params.get("name", None)
+        order_by = request.query_params.get("order_by", None)
+
+        queryset = use_case.get_queryset(name_filter=name_filter, order_by=order_by)
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(queryset, request)
+
+        if page is not None:
+            queryset = page
+
+        serializer = use_case.execute(queryset=queryset)
+
+        pagination_data = {
+            "offset": paginator.offset,
+            "limit": paginator.limit,
+            "total": paginator.count,
+        }
+
         return api_response_factory(
-            serializer_class=response,
+            serializer_class=serializer,
+            pagination=pagination_data,
             status_code=status.HTTP_200_OK,
         )
