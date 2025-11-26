@@ -20,17 +20,22 @@ class SyncResults(models.Model):
         auto_now=True,
         verbose_name=_("updated_at"),
     )
-    new_measurements_count = models.IntegerField(
-        blank=True,
-        null=True,
-        verbose_name=_("new_measurements_count"),
-        help_text=_("Number of new measurements created during sync"),
+    new_events_count = models.IntegerField(
+        default=0,
+        verbose_name=_("new_events_count"),
+        help_text=_("Number of new events created during sync"),
     )
-    updated_measurements_count = models.IntegerField(
+    updated_events_count = models.IntegerField(
+        default=0,
+        verbose_name=_("updated_events_count"),
+        help_text=_("Number of events updated during sync"),
+    )
+    last_synced_changed_at = models.DateTimeField(
         blank=True,
         null=True,
-        verbose_name=_("updated_measurements_count"),
-        help_text=_("Number of measurements updated during sync"),
+        verbose_name=_("last_synced_changed_at"),
+        help_text=_("Date of the last synced event's changed_at field"),
+        db_index=True,
     )
 
     class Meta:
@@ -43,4 +48,4 @@ class SyncResults(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"Sync at {self.created_at} - New: {self.new_measurements_count or 0}, Updated: {self.updated_measurements_count or 0}"
+        return f"Sync at {self.created_at} - New: {self.new_events_count}, Updated: {self.updated_events_count}"
