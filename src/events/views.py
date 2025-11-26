@@ -2,6 +2,7 @@ from urllib.request import Request
 
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -51,6 +52,7 @@ class EventCreateAPI(APIView):
 @get_events_docs
 class ListEventAPI(APIView):
     pagination_class = LimitOffsetPagination
+    permission_classes = [IsAuthenticated]
 
     def get(self, request: Request) -> Response:
         container = get_container()
