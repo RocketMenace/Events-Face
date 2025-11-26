@@ -17,6 +17,7 @@ help:
 	@echo "  collectstatic     - Collect static files"
 	@echo "  createsuperuser   - Create Django superuser"
 	@echo "  run               - Run Django application locally"
+	@echo "  celery_beat       - Run Celery worker with beat for periodic tasks"
 	@echo "  format            - Run ruff format command"
 	@echo "  check             - Run ruff check command"
 
@@ -61,3 +62,6 @@ format:
 
 check:
 	ruff check --fix .
+
+celery_beat:
+	celery -A src worker --loglevel=INFO -B

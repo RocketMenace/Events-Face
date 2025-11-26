@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 
+from celery.schedules import crontab
+
 from .env import BASE_DIR, env
 
 env.read_env(os.path.join(BASE_DIR, ".env"))
@@ -45,6 +47,8 @@ INSTALLED_APPS = [
     # project apps
     "src.events.apps.EventsConfig",
     "src.authentication.apps.AuthenticationConfig",
+    "src.sync.apps.SyncConfig",
+    "src.tasks.apps.TasksConfig",
     # 3rd party
     "rest_framework",
     "drf_spectacular",
@@ -155,3 +159,14 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+CELERY_BROKER_URL = env("CELERY_BROKER_URL")
+
+CELERY_BEAT_SCHEDULE = {
+    "delete-old-events-daily": {
+        "task": "tasks.delete_old_events",
+        "schedule": crontab(minute="*"),
+        "args": (7,),
+    },
+}

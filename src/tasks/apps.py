@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class SyncConfig(AppConfig):
+class TasksConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "src.sync"
+    name = "src.tasks"
