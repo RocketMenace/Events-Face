@@ -69,6 +69,12 @@ class EventBaseSerializer(serializers.Serializer):
         input_formats=["%m.%d.%Y"],
         default_timezone=timezone.get_current_timezone(),
     )
+    registration_deadline = serializers.DateTimeField(
+        required=True,
+        format="%m.%d.%Y",
+        input_formats=["%m.%d.%Y"],
+        default_timezone=timezone.get_current_timezone(),
+    )
 
     @staticmethod
     def validate_event_datetime(value: datetime) -> datetime:
@@ -92,6 +98,12 @@ class EventResponseSerializer(serializers.Serializer):
     event_datetime = serializers.DateTimeField(
         format="%m.%d.%Y",
     )
+    registration_deadline = serializers.DateTimeField(
+        required=True,
+        format="%m.%d.%Y",
+        input_formats=["%m.%d.%Y"],
+        default_timezone=timezone.get_current_timezone(),
+    )
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -107,6 +119,7 @@ class EventResponseSerializer(serializers.Serializer):
             "area": dto.area or "",
             "status": dto.status,
             "event_datetime": dto.event_datetime,
+            "registration_deadline": dto.registration_deadline,
         }
 
     @classmethod

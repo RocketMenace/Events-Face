@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",
     # project apps
     "src.events.apps.EventsConfig",
     "src.authentication.apps.AuthenticationConfig",

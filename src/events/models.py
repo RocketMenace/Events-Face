@@ -62,6 +62,10 @@ class EventModel(models.Model):
         null=False,
         blank=False,
     )
+    registration_deadline = models.DateTimeField(
+        verbose_name=_("registration_deadline"),
+        db_index=True,
+    )
     area = models.ForeignKey(
         to=EventAreaModel,
         related_name="events",

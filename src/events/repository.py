@@ -1,3 +1,4 @@
+from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.core.exceptions import ValidationError
 
 from .dto import EventAreaDTO, EventDTO
@@ -14,6 +15,7 @@ class EventRepository:
                 status=dto.status,
                 area_id=dto.area_id,
                 event_datetime=dto.event_datetime,
+                registration_deadline=dto.registration_deadline,
             )
             obj.full_clean()
             obj.save()
@@ -24,6 +26,7 @@ class EventRepository:
                 area_id=obj.area_id,
                 area=obj.area.name if obj.area else "",
                 event_datetime=obj.event_datetime,
+                registration_deadline=obj.registration_deadline,
             )
         except EventAreaModel.DoesNotExist as exc:
             raise ValidationError({"area": ["Event area does not exist."]}) from exc
@@ -34,7 +37,16 @@ class EventRepository:
         queryset = self.model.objects.filter(status="open").select_related("area")
 
         if name_filter:
-            queryset = queryset.filter(name__icontains=name_filter)
+            search_vector = SearchVector("name")
+            search_query = SearchQuery(name_filter)
+            queryset = (
+                queryset.annotate(
+                    search=search_vector,
+                    rank=SearchRank(search_vector, search_query),
+                )
+                .filter(search=search_query)
+                .order_by("-rank", "-event_datetime")
+            )
 
         if order_by:
             if order_by.lower() == "asc":
@@ -57,6 +69,7 @@ class EventRepository:
                 area_id=obj.area_id,
                 area=obj.area.name if obj.area else "",
                 event_datetime=obj.event_datetime,
+                registration_deadline=obj.registration_deadline,
             )
             for obj in queryset
         ]
