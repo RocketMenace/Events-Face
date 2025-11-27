@@ -1,8 +1,10 @@
+from uuid import UUID
+
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.core.exceptions import ValidationError
 
-from .dto import EventAreaDTO, EventDTO
-from .models import EventAreaModel, EventModel
+from .dto import EventAreaDTO, EventDTO, VisitorDTO
+from .models import EventAreaModel, EventModel, VisitorModel
 
 
 class EventRepository:
@@ -75,6 +77,11 @@ class EventRepository:
         ]
         return events
 
+    def get_open_events(self, event_id: UUID) -> bool:
+        if not self.model.objects.filter(status="open", id=event_id):
+            return False
+        return True
+
 
 class EventAreaRepository:
     model = EventAreaModel
@@ -87,3 +94,33 @@ class EventAreaRepository:
             return EventAreaDTO(id=obj.id, name=obj.name)
         except ValidationError:
             raise
+
+
+class VisitorRepository:
+    model = VisitorModel
+
+    def create(self, dto: VisitorDTO) -> VisitorDTO:
+        try:
+            event = EventModel.objects.get(id=dto.event_id)
+            obj = self.model(
+                full_name=dto.full_name,
+                email=dto.email,
+                event_id=event,
+            )
+            obj.full_clean()
+            obj.save()
+            return VisitorDTO(
+                id=obj.id,
+                email=obj.email,
+                full_name=obj.full_name,
+                event_id=obj.event_id,
+            )
+        except EventModel.DoesNotExist as exc:
+            raise ValidationError({"event_id": ["Event does not exist."]}) from exc
+        except Exception:
+            raise
+
+    def is_visitor_registered(self, dto: VisitorDTO) -> bool:
+        if self.model.objects.filter(email=dto.email, event_id=dto.event_id).first():
+            return True
+        return False

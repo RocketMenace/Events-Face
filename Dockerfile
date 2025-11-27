@@ -1,101 +1,76 @@
-# Use official Python runtime as base image
-FROM python:3.12-slim-bookworm AS builder
+##########
+# Builder
+##########
+FROM python:3.13-slim AS builder
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=off \
-    PIP_DISABLE_PIP_VERSION_CHECK=on \
-    PYTHONPATH=/app
+    PIP_DISABLE_PIP_VERSION_CHECK=on
 
-# Set work directory
 WORKDIR /app
 
-## Install system dependencies required for building Python packages
-#RUN apt-get update && apt-get install -y \
-#    build-essential \
-#    libpq-dev \
-#    python3-dev \
-# Install system dependencies required for building Python packages (including WeasyPrint)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+# Build dependencies for Python packages (psycopg2, WeasyPrint, etc.)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    libpq-dev \
     libcairo2-dev \
     libpango1.0-dev \
-    libgdk-pixbuf2.0-dev \
+    libgdk-pixbuf-2.0-dev \
     libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Create isolated virtual environment
+RUN python -m venv /venv
+ENV PATH="/venv/bin:$PATH"
 
-# Copy requirements file first to leverage Docker cache
-COPY requirements.txt .
+RUN pip install --upgrade pip
 
-# Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
-    # Clean up build dependencies to reduce image size
-    apt-get purge -y --auto-remove build-essential python3-dev && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Copy dependency metadata first for better caching
+COPY pyproject.toml uv.lock* ./
 
-# Stage 2: Production stage
-FROM python:3.12-slim-bookworm AS production
+# Install application (runtime dependencies) into the virtual environment
+RUN pip install --no-cache-dir .
 
-# Security best practices: Run as non-root user
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+##########
+# Runtime
+##########
+FROM python:3.13-slim AS runtime
 
-# Set environment variables
-ENV PYTHONFAULTHANDLER=1 \
+ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PATH="/home/appuser/.local/bin:${PATH}"
+    PATH="/venv/bin:$PATH"
 
-# Install runtime system dependencies (including WeasyPrint runtime libraries)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+# Runtime libraries required by installed packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     libcairo2 \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
-    libgdk-pixbuf2.0-0 \
+    libgdk-pixbuf-2.0-0 \
     shared-mime-info \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install system dependencies required for runtime
-RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    libpq5 \
-    openssl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create font cache directory with proper permissions
-RUN mkdir -p /tmp/.cache/fontconfig && \
-    chown -R appuser:appuser /tmp/.cache && \
-    chmod -R 755 /tmp/.cache
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
 
-RUN mkdir -p /app && chown appuser:appuser /app
 WORKDIR /app
 
-# Copy installed dependencies from builder stage
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+# Copy installed dependencies from builder
+COPY --from=builder /venv /venv
 
-# Create static directory with proper permissions
-RUN mkdir -p /app/collected_static && \
-    chown -R appuser:appuser /app/collected_static/ && \
-    chmod -R 755 /app/collected_static/
+# Copy entrypoint and project source
+COPY --chown=appuser:appuser entrypoint.sh /entrypoint.sh
+COPY --chown=appuser:appuser . .
 
-# Copy and make entrypoint script executable
-COPY entrypoint.sh /entrypoint.sh
+# Ensure entrypoint is executable
 RUN chmod +x /entrypoint.sh
 
-# Switch to non-root user
 USER appuser
 
-# Copy application code
-COPY --chown=appuser:appuser . .
-# Copy installed Python packages
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+EXPOSE 8000
 
-# Copy application code
-COPY --from=builder /app .
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+

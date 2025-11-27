@@ -118,3 +118,61 @@ class EventModel(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name} {self.event_datetime}"
+
+
+class VisitorModel(models.Model):
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        verbose_name=_("id"),
+    )
+    event_id = models.ForeignKey(
+        EventModel,
+        related_name="visitors",
+        on_delete=models.CASCADE,
+        verbose_name=_("event"),
+        db_index=True,
+        db_column="event_id",
+    )
+    full_name = models.CharField(
+        max_length=255,
+        verbose_name=_("full_name"),
+        help_text=_("The visitor's full name"),
+    )
+    email = models.EmailField(
+        max_length=255,
+        verbose_name=_("email"),
+        help_text=_("Contact email address for the visitor"),
+    )
+    registered_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("registered_at"),
+        db_index=True,
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_("updated_at"),
+    )
+
+    class Meta:
+        verbose_name = _("visitor")
+        verbose_name_plural = _("visitors")
+        db_table = "visitors"
+        ordering = ["-registered_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["event_id", "email"],
+                name="unique_visitor_per_event",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["event_id", "-registered_at"],
+                name="idx_visitor_event",
+            ),
+            models.Index(fields=["email"], name="idx_visitor_email"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.full_name} ({self.email})"

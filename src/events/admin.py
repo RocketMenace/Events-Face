@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
-from .models import EventAreaModel, EventModel
+from .models import EventAreaModel, EventModel, VisitorModel
 
 
 @admin.register(EventAreaModel)
@@ -84,3 +84,13 @@ class EventAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
         return queryset.select_related("area")
+
+
+@admin.register(VisitorModel)
+class VisitorAdmin(admin.ModelAdmin):
+    list_display = ("full_name", "email", "event_id", "registered_at")
+    search_fields = ("full_name", "email", "event_id__name")
+    list_filter = ("event_id", "registered_at")
+    readonly_fields = ("id", "registered_at", "updated_at")
+    autocomplete_fields = ("event_id",)
+    ordering = ("-registered_at",)

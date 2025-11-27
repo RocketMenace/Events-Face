@@ -12,6 +12,7 @@ from .serializers import (
     EventAreaResponseSerializer,
     EventRequestSerializer,
     EventResponseSerializer,
+    SignUpForEventRequestSerializer,
 )
 
 get_events_docs = extend_schema(
@@ -225,6 +226,126 @@ create_event_area_docs = extend_schema(
                                 "field": "name",
                                 "messages": [
                                     "Ensure this field has no more than 255 characters.",
+                                ],
+                            },
+                        ],
+                    },
+                    response_only=True,
+                ),
+            ],
+        ),
+    },
+)
+
+sign_up_for_event_docs = extend_schema(
+    description=_(
+        "Register a visitor for a specific event by providing their full name and email.",
+    ),
+    tags=["Events"],
+    methods=["POST"],
+    summary=_("Sign up for event"),
+    parameters=[
+        OpenApiParameter(
+            name="event_id",
+            type=str,
+            location=OpenApiParameter.PATH,
+            description=_("UUID of the event to register for."),
+            required=True,
+        ),
+    ],
+    request=SignUpForEventRequestSerializer,
+    examples=[
+        OpenApiExample(
+            name="Example request",
+            value={
+                "full_name": "John Doe",
+                "email": "john.doe@example.com",
+            },
+            request_only=True,
+        ),
+    ],
+    responses={
+        status.HTTP_201_CREATED: OpenApiResponse(
+            description=_("Visitor successfully registered for the event."),
+            response=dict,
+            examples=[
+                OpenApiExample(
+                    name="Registration successful",
+                    value={
+                        "data": {},
+                        "meta": {"message": "Successful registration"},
+                        "errors": [],
+                    },
+                    response_only=True,
+                ),
+            ],
+        ),
+        status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+            description=_("Bad request errors."),
+            response=dict,
+            examples=[
+                OpenApiExample(
+                    name="Event is closed",
+                    value={
+                        "detail": "Event is closed",
+                    },
+                    response_only=True,
+                ),
+                OpenApiExample(
+                    name="Registration already exists",
+                    value={
+                        "detail": "Registration already exists",
+                    },
+                    response_only=True,
+                ),
+            ],
+        ),
+        status.HTTP_422_UNPROCESSABLE_ENTITY: OpenApiResponse(
+            description=_("Validation failed."),
+            response=dict,
+            examples=[
+                OpenApiExample(
+                    name="Missing required fields",
+                    value={
+                        "data": {},
+                        "meta": {},
+                        "errors": [
+                            {
+                                "field": "full_name",
+                                "messages": ["This field is required."],
+                            },
+                            {
+                                "field": "email",
+                                "messages": ["This field is required."],
+                            },
+                        ],
+                    },
+                    response_only=True,
+                ),
+                OpenApiExample(
+                    name="Invalid email format",
+                    value={
+                        "data": {},
+                        "meta": {},
+                        "errors": [
+                            {
+                                "field": "email",
+                                "messages": ["Enter a valid email address."],
+                            },
+                        ],
+                    },
+                    response_only=True,
+                ),
+                OpenApiExample(
+                    name="Name too long",
+                    value={
+                        "data": {},
+                        "meta": {},
+                        "errors": [
+                            {
+                                "field": "full_name",
+                                "messages": [
+                                    "Ensure this field has no more than 128 characters.",
                                 ],
                             },
                         ],

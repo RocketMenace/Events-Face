@@ -18,3 +18,11 @@ class EventDTO:
     id: UUID | None = None
     area: str | None = None
     area_id: UUID | None = None
+
+
+@dataclass(kw_only=True)
+class VisitorDTO:
+    full_name: str
+    email: str
+    event_id: UUID
+    id: UUID | None = None

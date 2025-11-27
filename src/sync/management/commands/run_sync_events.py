@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from src.events.models import EventAreaModel, EventModel
-from src.sync.models import SyncResults
+from src.sync.models import SyncResultsModel
 
 
 class Command(BaseCommand):
@@ -26,7 +26,7 @@ class Command(BaseCommand):
         self.stdout.write("Starting events synchronization...")
 
         sync_all = options["all"]
-        last_sync_result = SyncResults.objects.order_by("-created_at").first()
+        last_sync_result = SyncResultsModel.objects.order_by("-created_at").first()
 
         if sync_all:
             self.stdout.write("Performing full synchronization...")
@@ -71,7 +71,7 @@ class Command(BaseCommand):
             if max_changed_at is None and last_sync_result:
                 max_changed_at = last_sync_result.last_synced_changed_at
 
-            sync_result = SyncResults.objects.create(
+            sync_result = SyncResultsModel.objects.create(
                 new_events_count=new_count,
                 updated_events_count=updated_count,
                 last_synced_changed_at=max_changed_at,

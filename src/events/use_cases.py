@@ -1,6 +1,9 @@
-from .dto import EventAreaDTO, EventDTO
-from .serializers import EventAreaResponseSerializer, EventResponseSerializer
-from .services import AreaService, EventsService
+from .dto import EventAreaDTO, EventDTO, VisitorDTO
+from .serializers import (
+    EventAreaResponseSerializer,
+    EventResponseSerializer,
+)
+from .services import AreaService, EventsService, OutboxService
 
 
 class GetEventsUseCase:
@@ -32,3 +35,14 @@ class CreateAreaUseCase:
     def execute(self, dto: EventAreaDTO) -> EventAreaResponseSerializer:
         area = self.service.create_area(dto=dto)
         return EventAreaResponseSerializer.from_dto(dto=area)
+
+
+class SignUpForEventUseCase:
+    def __init__(
+        self,
+        service: OutboxService,
+    ):
+        self.service = service
+
+    def execute(self, dto: VisitorDTO) -> None:
+        self.service.register_visitor(visitor_dto=dto)

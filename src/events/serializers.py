@@ -1,11 +1,12 @@
 from datetime import datetime
+from uuid import UUID
 
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
-from .dto import EventAreaDTO, EventDTO
+from .dto import EventAreaDTO, EventDTO, VisitorDTO
 from .models import EventAreaModel, EventModel
 
 
@@ -138,3 +139,11 @@ class EventResponseSerializer(serializers.Serializer):
         if serializer.is_valid(raise_exception=True):
             return serializer
         return None
+
+
+class SignUpForEventRequestSerializer(serializers.Serializer):
+    full_name = serializers.CharField(max_length=128, required=True)
+    email = serializers.EmailField(required=True)
+
+    def to_dto(self, event_id: UUID) -> VisitorDTO:
+        return VisitorDTO(**self.validated_data, event_id=event_id)

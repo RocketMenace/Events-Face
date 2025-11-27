@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 
 from celery.schedules import crontab
+from kombu import Queue
 
 from .env import BASE_DIR, env
 
@@ -50,6 +51,7 @@ INSTALLED_APPS = [
     "src.authentication.apps.AuthenticationConfig",
     "src.sync.apps.SyncConfig",
     "src.tasks.apps.TasksConfig",
+    "src.notifications.apps.NotificationsConfig",
     # 3rd party
     "rest_framework",
     "drf_spectacular",
@@ -155,6 +157,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "collected_static"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -171,3 +174,16 @@ CELERY_BEAT_SCHEDULE = {
         "args": (7,),
     },
 }
+
+CELERY_TASK_DEFAULT_QUEUE = "default"
+CELERY_TASK_QUEUES = (
+    Queue("default"),
+    Queue("periodic"),
+)
+CELERY_TASK_ROUTES = {
+    "tasks.delete_old_events": {"queue": "periodic"},
+}
+
+NOTIFICATION_SERVICE_URL = env("NOTIFICATION_SERVICE_URL")
+NOTIFICATION_TOKEN = env("NOTIFICATION_TOKEN")
+NOTIFICATION_SERVICE_OWNER_ID = env("NOTIFICATION_SERVICE_OWNER_ID")

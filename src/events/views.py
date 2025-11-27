@@ -1,4 +1,5 @@
 from urllib.request import Request
+from uuid import UUID
 
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
@@ -6,10 +7,24 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from ..common.response_factory import api_response_factory
-from .api_docs import create_event_area_docs, create_event_docs, get_events_docs
+from .api_docs import (
+    create_event_area_docs,
+    create_event_docs,
+    get_events_docs,
+    sign_up_for_event_docs,
+)
 from .ioc_container import get_container
-from .serializers import EventAreaRequestSerializer, EventRequestSerializer
-from .use_cases import CreateAreaUseCase, CreateEventUseCase, GetEventsUseCase
+from .serializers import (
+    EventAreaRequestSerializer,
+    EventRequestSerializer,
+    SignUpForEventRequestSerializer,
+)
+from .use_cases import (
+    CreateAreaUseCase,
+    CreateEventUseCase,
+    GetEventsUseCase,
+    SignUpForEventUseCase,
+)
 
 
 @create_event_area_docs
@@ -80,4 +95,22 @@ class ListEventAPI(APIView):
             serializer_class=serializer,
             pagination=pagination_data,
             status_code=status.HTTP_200_OK,
+        )
+
+
+@sign_up_for_event_docs
+class SignUpForEventAPI(APIView):
+    def post(self, request: Request, event_id: UUID) -> Response:
+        input_serializer = SignUpForEventRequestSerializer(data=request.data)
+        if input_serializer.is_valid(raise_exception=True):
+            container = get_container()
+            use_case: SignUpForEventUseCase = container.resolve(SignUpForEventUseCase)
+            use_case.execute(dto=input_serializer.to_dto(event_id=event_id))
+            return api_response_factory(
+                status_code=status.HTTP_201_CREATED,
+                meta={"message": "Successful registration"},
+            )
+        return api_response_factory(
+            errors=input_serializer.errors,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         )

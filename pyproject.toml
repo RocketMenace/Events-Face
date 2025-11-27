@@ -11,7 +11,6 @@ dependencies = [
     "djangorestframework>=3.16.1",
     "djangorestframework-simplejwt>=5.5.1",
     "drf-spectacular>=0.29.0",
-    "kafka-python>=2.3.0",
     "psycopg2-binary>=2.9.11",
     "punq>=0.7.0",
     "redis>=7.1.0",
